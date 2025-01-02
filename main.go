@@ -19,7 +19,7 @@ var (
 func main() {
 	// Логгирование
 	// Создаем логгер с уровнем INFO
-	logger := NewLogger(INFO, log.New(os.Stdout, "", log.LstdFlags))
+	logger := NewLogger(INFO, log.New(os.Stdout, "", log.LstdFlags), false)
 
 	if *debug {
 		logger.SetLevel(DEBUG)

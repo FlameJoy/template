@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	DEBUG = iota // Ярко-голубой
+	DEBUG = iota
 	INFO
-	WARN  // Желтый
-	ERROR // Красный
-	FATAL // Красный BG
+	WARN
+	ERROR
+	FATAL
 )
 
 // Colors
@@ -78,44 +78,32 @@ var levelMap = map[int]string{
 }
 
 type CustomLogger struct {
-	logger *log.Logger
-	level  int
-	mu     sync.Mutex
+	level     int
+	logger    *log.Logger
+	mu        sync.Mutex
+	timestamp bool
 }
 
-func NewLogger(level int, logger *log.Logger) *CustomLogger {
+func NewLogger(level int, l *log.Logger, timestamp bool) *CustomLogger {
 	return &CustomLogger{
-		level:  level,
-		logger: logger,
+		level:     level,
+		logger:    l,
+		timestamp: timestamp,
 	}
 }
 
 func (l *CustomLogger) SetLevel(level int) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if level < 5 && level >= 0 {
-		l.level = level
-	}
-}
-
-func (l *CustomLogger) logMessage(level int, color, format string, v ...interface{}) {
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	if level < l.level {
-		return
-	}
-
-	prefix := fmt.Sprintf("[%s%s\033[0m] | %s | ", color, levelMap[level], time.Now().Format("2021-02-03 15:14:32"))
-	msg := fmt.Sprintf(format, v...)
-	l.logger.Println(prefix, msg)
+	l.level = level
 }
 
 func (l *CustomLogger) Debug(format string, v ...interface{}) {
-	l.logMessage(DEBUG, BRIGHT_CYAN, format, v...)
+	l.logMessage(DEBUG, BRIGHT_MAGENTA, format, v...)
 }
 
 func (l *CustomLogger) Info(format string, v ...interface{}) {
-	l.logMessage(INFO, WHITE, format, v...)
+	l.logMessage(INFO, CYAN, format, v...)
 }
 
 func (l *CustomLogger) Warn(format string, v ...interface{}) {
@@ -129,4 +117,22 @@ func (l *CustomLogger) Error(format string, v ...interface{}) {
 func (l *CustomLogger) Fatal(format string, v ...interface{}) {
 	l.logMessage(FATAL, BG_RED, format, v...)
 	os.Exit(1)
+}
+
+func (l *CustomLogger) logMessage(level int, color, format string, v ...interface{}) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if l.level > level {
+		return
+	}
+
+	var prefix string
+	if l.timestamp {
+		prefix = fmt.Sprintf("[%s%s\033[0m] | %s |", color, levelMap[level], time.Now().Format("2006-01-02 15:04:05"))
+	} else {
+		prefix = fmt.Sprintf("[%s%s\033[0m] |", color, levelMap[level])
+	}
+
+	msg := fmt.Sprintf(format, v...)
+	l.logger.Println(prefix, msg)
 }
